@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Dashboard - RMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="assets/Kannadi Bhai Biryani.png">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar glass">
+            <div class="sidebar-header" style="cursor: pointer;" onclick="window.location.href='index.html'">
+                <h2>RMS</h2>
+            </div>
+            <ul class="sidebar-menu"></ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar glass">
+                <button id="sidebarToggle" class="glass-btn menu-btn" style="display: none;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h3>Server Dashboard - Tables & Orders</h3>
+                <div class="user-profile">
+                    <div class="avatar" id="userAvatar">S</div>
+                    <div class="user-info">
+                        <span id="profileName">Server</span>
+                        <small id="profileRole">Server</small>
+                    </div>
+                </div>
+            </header>
+
+            <div class="dashboard-grid" id="tablesGrid">
+                <!-- Tables populated here -->
+            </div>
+
+            <div class="glass" style="padding: 20px; margin-top: 30px;">
+                <h3 style="margin-bottom: 20px;">Live Order Feed</h3>
+                <div class="table-container">
+                    <table class="styled-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Items</th>
+                                <th>Customer ID</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersBody">
+                            <!-- Populated dynamically -->
+                            <tr>
+                                <td colspan="5" style="text-align:center;">No active orders</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Serve Order Modal -->
+    <div class="modal-overlay" id="serveModal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2>Serve Order</h2>
+                <button class="close-btn" onclick="UI.closeModal('serveModal')">×</button>
+            </div>
+            <p>Mark order <strong id="serveOrderId"></strong> as Completed and served to customer?</p>
+            <button class="glass-btn" style="width: 100%; margin-top: 20px;" onclick="confirmServe()">Confirm
+                Serving</button>
+        </div>
+    </div>
+
+    <!-- Table Details Modal -->
+    <div class="modal-overlay" id="tableDetailsModal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2>Table <span id="detailsTableNum"></span> Details</h2>
+                <button class="close-btn" onclick="UI.closeModal('tableDetailsModal')">×</button>
+            </div>
+            <div id="tableOrderSummary" style="margin-top: 20px;">
+                <h4 style="margin-bottom: 10px;">Current Order Items:</h4>
+                <div id="tableOrderItems" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+                    <!-- Populated via JS -->
+                </div>
+                <button id="detailsActionBtn" class="glass-btn" style="width: 100%;">
+                    <i class="fas fa-plus"></i> Add More Items
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Table Modal -->
+    <div class="modal-overlay" id="assignModal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2>Assign Table <span id="assignTableNum"></span></h2>
+                <button class="close-btn" onclick="UI.closeModal('assignModal')">×</button>
+            </div>
+            <div style="margin-top: 20px;">
+                <label>Customer Name/Phone</label>
+                <input type="text" id="custSearch" class="glass-input" placeholder="Search customer...">
+                <div id="custResults" style="margin-top: 10px; max-height: 150px; overflow-y: auto;"></div>
+                <button class="glass-btn" style="width: 100%; margin-top: 20px;" onclick="confirmAssign()">Confirm
+                    Assignment</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/server.js"></script>
+    <script>
+        let currentServingId = null;
+        let currentAssignTable = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            UI.setupSidebar();
+            loadTables();
+            loadOrders();
+            setInterval(() => {
+                loadOrders();
+                loadTables();
+            }, 5000);
+        });
+
+        function loadTables() {
+            const grid = document.getElementById('tablesGrid');
+            const tables = ServerServices.getTables();
+            const users = Storage.get('users') || [];
+            const currentUser = Storage.get('currentUser');
+
+            grid.innerHTML = '';
+            tables.forEach(table => {
+                const isOccupied = table.status === 'Occupied';
+                let customerName = 'Available';
+                if (isOccupied && table.currentCustomerId) {
+                    const cust = users.find(u => u.id === table.currentCustomerId);
+                    customerName = cust ? cust.name : 'Guest';
+                }
+
+                // Draft indicator (order taken but not yet sent)
+                let draftBadge = '';
+                if (isOccupied && table.currentCustomerId && currentUser && currentUser.role === 'server') {
+                    const cust = users.find(u => u.id === table.currentCustomerId);
+                    const phone = Storage.normalizePhone(cust ? cust.phone : table.currentCustomerId);
+                    const customerKey = cust ? cust.id : (phone || table.currentCustomerId || 'unknown');
+                    const draftCart = Storage.getServerDraftCart(currentUser.id, table.number, customerKey);
+                    if (draftCart.length > 0) {
+                        const count = draftCart.reduce((sum, it) => sum + (it.quantity || 0), 0);
+                        draftBadge = `<div class="badge preparing" style="margin-left:auto;">Draft ${count} item${count === 1 ? '' : 's'}</div>`;
+                    }
+                }
+
+                grid.innerHTML += `
+                    <div class="stat-card glass ${isOccupied ? 'active-card' : ''}" style="cursor: pointer;" onclick="${isOccupied ? `viewTableDetails(${table.number}, '${table.currentCustomerId}')` : `openAssignModal(${table.number})`}">
+                        <div class="stat-icon"><i class="fas fa-chair"></i></div>
+                        <div class="stat-details">
+                            <h3>Table ${table.number}</h3>
+                            <p style="color:${isOccupied ? 'var(--primary)' : 'var(--text-secondary)'}">${customerName}</p>
+                        </div>
+                        ${isOccupied ? '<div class="badge pending">Occupied</div>' : '<div class="badge success">Free</div>'}
+                        ${draftBadge}
+                    </div>
+                `;
+            });
+        }
+
+        function viewTableDetails(num, customerId) {
+            currentAssignTable = num;
+            const orders = Storage.get('orders') || [];
+            const activeOrder = orders.find(o => o.tableNumber === num && o.status !== 'Completed');
+
+            const modalTitle = document.getElementById('detailsTableNum');
+            const itemsContainer = document.getElementById('tableOrderItems');
+            const actionBtn = document.getElementById('detailsActionBtn');
+
+            modalTitle.textContent = num;
+            itemsContainer.innerHTML = '';
+
+            if (activeOrder) {
+                activeOrder.items.forEach(item => {
+                    itemsContainer.innerHTML += `
+                        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--glass-border);">
+                            <span>${item.quantity}x ${item.menuItem.name}</span>
+                            <strong>Rs. ${(item.quantity * item.menuItem.price).toFixed(2)}</strong>
+                        </div>
+                    `;
+                });
+                itemsContainer.innerHTML += `
+                    <div style="display: flex; justify-content: space-between; padding-top: 15px; font-weight: bold; font-size: 1.1rem; color: var(--primary);">
+                        <span>Total Amount</span>
+                        <span>Rs. ${activeOrder.totalAmount.toFixed(2)}</span>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <span class="badge ${activeOrder.status.toLowerCase()}">${activeOrder.status}</span>
+                    </div>
+                `;
+                actionBtn.innerHTML = `<i class="fas fa-plus"></i> Add More Items`;
+                actionBtn.onclick = () => takeOrder(num, customerId);
+            } else {
+                // Show server draft (taken but not placed) if exists
+                const currentUser = Storage.get('currentUser');
+                const users = Storage.get('users') || [];
+                const found = users.find(u => u.id === customerId);
+                const phone = Storage.normalizePhone(found ? found.phone : customerId);
+                const customerKey = (found && found.id) ? found.id : (phone || customerId || 'unknown');
+
+                const draftCart = Storage.getServerDraftCart(currentUser.id, num, customerKey);
+                if (draftCart.length > 0) {
+                    draftCart.forEach(item => {
+                        itemsContainer.innerHTML += `
+                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--glass-border);">
+                                <span>${item.quantity}x ${item.menuItem.name}</span>
+                                <strong>Rs. ${(item.quantity * item.menuItem.price).toFixed(2)}</strong>
+                            </div>
+                        `;
+                    });
+                    const total = draftCart.reduce((sum, it) => sum + (it.quantity * it.menuItem.price), 0);
+                    itemsContainer.innerHTML += `
+                        <div style="display: flex; justify-content: space-between; padding-top: 15px; font-weight: bold; font-size: 1.1rem; color: var(--secondary);">
+                            <span>Draft Total</span>
+                            <span>Rs. ${total.toFixed(2)}</span>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <span class="badge pending">Draft (Not Sent)</span>
+                        </div>
+                    `;
+
+                    actionBtn.innerHTML = `<i class="fas fa-paper-plane"></i> Review & Send to Kitchen`;
+                    actionBtn.onclick = () => {
+                        sessionStorage.setItem('currentOrderTable', num);
+                        sessionStorage.setItem('currentOrderCustomer', customerId);
+                        if (phone) sessionStorage.setItem('currentOrderCustomerPhone', phone);
+                        window.location.href = 'order.html';
+                    };
+                } else {
+                    itemsContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No active orders yet.</p>';
+                    actionBtn.innerHTML = `<i class="fas fa-plus"></i> Take Order`;
+                    actionBtn.onclick = () => takeOrder(num, customerId);
+                }
+            }
+            UI.showModal('tableDetailsModal');
+        }
+
+        function openAssignModal(num) {
+            currentAssignTable = num;
+            document.getElementById('assignTableNum').textContent = num;
+            UI.showModal('assignModal');
+        }
+
+        function confirmAssign() {
+            const val = document.getElementById('custSearch').value;
+            if (!val) {
+                UI.showToast('Please enter customer name/phone', 'error');
+                return;
+            }
+            // Simple logic: if exists use ID, else use value as ID (temp)
+            const users = Storage.get('users') || [];
+            const normalized = Storage.normalizePhone(val);
+            const found = users.find(u => u.name === val || (normalized && Storage.normalizePhone(u.phone) === normalized));
+            // For guests we store phone (normalized) so later orders link cleanly.
+            const id = found ? found.id : (normalized || val);
+
+            ServerServices.assignTable(currentAssignTable, id);
+            UI.closeModal('assignModal');
+            loadTables();
+        }
+
+        function takeOrder(tableNum, customerId) {
+            // Save selected table/customer to session storage for the order page
+            sessionStorage.setItem('currentOrderTable', tableNum);
+            sessionStorage.setItem('currentOrderCustomer', customerId);
+            // Also store a normalized phone when possible (improves draft + linking)
+            const users = Storage.get('users') || [];
+            const found = users.find(u => u.id === customerId);
+            const phone = Storage.normalizePhone(found ? found.phone : customerId);
+            if (phone) sessionStorage.setItem('currentOrderCustomerPhone', phone);
+            window.location.href = 'menu.html';
+        }
+
+        function loadOrders() {
+            const tbody = document.getElementById('ordersBody');
+            const orders = ServerServices.getOrders().filter(o => o.status !== 'Completed');
+
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No active orders</td></tr>';
+                return;
+            }
+
+            const users = Storage.get('users') || [];
+
+            tbody.innerHTML = '';
+            orders.forEach(order => {
+                const statusClass = order.status.toLowerCase();
+                const itemsList = order.items.map(i => `${i.quantity}x ${i.menuItem.name}`).join(', ');
+
+                // Fetch customer details
+                let customerName = 'Guest';
+                let customerPhone = Storage.normalizePhone(order.customerPhone ?? order.customerId) || (order.customerId || '');
+
+                const linkedUserId = order.customerUserId || (users.find(u => u.id === order.customerId) ? order.customerId : null);
+                const foundCustomer = linkedUserId ? users.find(u => u.id === linkedUserId) : null;
+                if (foundCustomer) {
+                    customerName = foundCustomer.name;
+                    customerPhone = Storage.normalizePhone(foundCustomer.phone) || foundCustomer.phone;
+                }
+
+                const tableInfo = order.tableNumber ? `<span style="font-size:0.7rem; display:block; color:var(--primary)">Table ${order.tableNumber}</span>` : '';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight: bold; color:var(--primary)">
+                            #${order.id.slice(-6)}
+                            ${tableInfo}
+                        </td>
+                        <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemsList}">${itemsList}</td>
+                        <td style="color:var(--text-secondary)">
+                            <div style="font-size: 0.9rem; font-weight: bold; color: var(--text-primary);">${customerName}</div>
+                            <div style="font-size: 0.8rem;">${customerPhone}</div>
+                        </td>
+                        <td><span class="badge ${statusClass}">${order.status}</span></td>
+                        <td>
+                            ${order.status === 'Ready' ?
+                        `<button class="glass-btn" style="padding: 5px 10px; font-size: 0.8rem;" onclick="serveOrder('${order.id}')">Serve</button>` :
+                        `<span style="color:var(--text-secondary); font-size:0.8rem">Waiting on Kitchen</span>`
+                    }
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function serveOrder(id) {
+            currentServingId = id;
+            document.getElementById('serveOrderId').textContent = '#' + id.slice(-6);
+            UI.showModal('serveModal');
+        }
+
+        function confirmServe() {
+            ServerServices.updateOrderStatus(currentServingId, 'Completed');
+            UI.closeModal('serveModal');
+            loadOrders();
+            loadTables();
+        }
+    </script>
+</body>
+
+</html>

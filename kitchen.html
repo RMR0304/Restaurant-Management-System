@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitchen Board - RMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="assets/Kannadi Bhai Biryani.png">
+    <style>
+        .kanban-board {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding-bottom: 20px;
+        }
+
+        .kanban-column {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .kanban-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .kanban-header h4 {
+            margin: 0;
+        }
+
+        .order-card {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        .order-card.pending {
+            border-left-color: #ffc107;
+        }
+
+        .order-card.preparing {
+            border-left-color: #2196f3;
+        }
+
+        .order-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .order-items {
+            margin: 10px 0;
+        }
+
+        .order-item-list {
+            list-style: none;
+            padding: 0;
+            font-size: 0.9rem;
+        }
+
+        .order-item-list li {
+            padding: 5px 0;
+            border-bottom: 1px dashed var(--glass-border);
+        }
+
+        .order-item-list li:last-child {
+            border: none;
+        }
+
+        .timer {
+            font-family: monospace;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar glass">
+            <div class="sidebar-header" style="cursor: pointer;" onclick="window.location.href='index.html'">
+                <h2>RMS</h2>
+            </div>
+            <ul class="sidebar-menu"></ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar glass">
+                <button id="sidebarToggle" class="glass-btn menu-btn" style="display: none;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h3>Kitchen Board (Live) <i class="fas fa-circle text-danger"
+                        style="color: #f44336; font-size: 10px; animation: blink 1s infinite;"></i></h3>
+                <div class="user-profile">
+                    <div class="avatar" id="userAvatar">K</div>
+                    <div class="user-info">
+                        <span id="profileName">Chef</span>
+                        <small id="profileRole">Kitchen</small>
+                    </div>
+                </div>
+            </header>
+
+            <div class="kanban-board">
+                <!-- Pending Queue -->
+                <div class="kanban-column" id="colPending">
+                    <div class="kanban-header">
+                        <h4 style="color: #ffc107"><i class="fas fa-list"></i> New Orders</h4>
+                        <span class="badge" style="background: rgba(255,193,7,0.2); color: #ffc107;"
+                            id="countPending">0</span>
+                    </div>
+                    <div class="kanban-cards" id="cardsPending"></div>
+                </div>
+
+                <!-- Preparing Queue -->
+                <div class="kanban-column" id="colPreparing">
+                    <div class="kanban-header">
+                        <h4 style="color: #2196f3"><i class="fas fa-fire"></i> Preparing</h4>
+                        <span class="badge" style="background: rgba(33,150,243,0.2); color: #2196f3;"
+                            id="countPreparing">0</span>
+                    </div>
+                    <div class="kanban-cards" id="cardsPreparing"></div>
+                </div>
+
+                <!-- Ready Queue (Wait for pickup) -->
+                <div class="kanban-column" id="colReady">
+                    <div class="kanban-header">
+                        <h4 style="color: #4caf50"><i class="fas fa-check-double"></i> Ready for Pickup</h4>
+                        <span class="badge" style="background: rgba(76,175,80,0.2); color: #4caf50;"
+                            id="countReady">0</span>
+                    </div>
+                    <!-- Using same CSS classes for visual, just a static list -->
+                    <div class="kanban-cards" id="cardsReady"></div>
+                </div>
+            </div>
+
+            <!-- Low Stock Alerts -->
+            <div class="glass" style="margin-top: 30px; padding: 20px; border-left: 4px solid var(--error);"
+                id="stockAlerts">
+                <h4 style="color: var(--error);"><i class="fas fa-exclamation-triangle"></i> Low Stock Alerts</h4>
+                <div id="alertList" style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary);">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Audio for new order notification -->
+    <audio id="notificationSound" src="https://www.soundjay.com/buttons/sounds/button-4.mp3" preload="auto"></audio>
+
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/kitchen.js"></script>
+    <script>
+        let previousPendingCount = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            UI.setupSidebar();
+            loadBoard();
+            checkStock();
+
+            // Live polling every 3 seconds for new orders
+            setInterval(() => {
+                loadBoard();
+                checkStock();
+            }, 3000);
+        });
+
+        function formatTimeDiff(timestamp) {
+            const diff = Math.floor((Date.now() - timestamp) / 1000);
+            const mins = Math.floor(diff / 60);
+            const secs = diff % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function playNotification() {
+            const audio = document.getElementById('notificationSound');
+            if (audio) {
+                audio.play().catch(e => console.log('Audio playback prevented by browser'));
+            }
+        }
+
+        function loadBoard() {
+            const allOrders = Storage.get('orders').sort((a, b) => a.timestamp - b.timestamp);
+
+            const pending = allOrders.filter(o => o.status === 'Pending');
+            const preparing = allOrders.filter(o => o.status === 'Preparing');
+            const ready = allOrders.filter(o => o.status === 'Ready');
+
+            // Check for new pending orders
+            if (pending.length > previousPendingCount) {
+                playNotification();
+            }
+            previousPendingCount = pending.length;
+
+            updateColumn('cardsPending', pending, 'pending', 'Accept & Prepare', 'Preparing');
+            updateColumn('cardsPreparing', preparing, 'preparing', 'Mark as Ready', 'Ready');
+            updateReadyColumn('cardsReady', ready.slice(0, 5)); // Show only top 5 ready
+
+            document.getElementById('countPending').textContent = pending.length;
+            document.getElementById('countPreparing').textContent = preparing.length;
+            document.getElementById('countReady').textContent = ready.length;
+        }
+
+        function updateColumn(containerId, orders, statusClass, btnText, nextStatus) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            const users = Storage.get('users') || [];
+
+            orders.forEach(order => {
+                const age = formatTimeDiff(order.timestamp);
+                const itemsList = order.items.map(i => `<li><strong>${i.quantity}x</strong> ${i.menuItem.name}</li>`).join('');
+
+                let customerName = 'Guest';
+                let customerPhone = Storage.normalizePhone(order.customerPhone ?? order.customerId) || (order.customerId || '');
+                const linkedUserId = order.customerUserId || (users.find(u => u.id === order.customerId) ? order.customerId : null);
+                const foundCustomer = linkedUserId ? users.find(u => u.id === linkedUserId) : null;
+                if (foundCustomer) {
+                    customerName = foundCustomer.name;
+                    customerPhone = Storage.normalizePhone(foundCustomer.phone) || foundCustomer.phone;
+                }
+
+                const tableBadge = order.tableNumber ? `<span class="badge" style="background:var(--primary); color:white; font-size:0.7rem; margin-right:5px;">Table ${order.tableNumber}</span>` : '';
+
+                container.innerHTML += `
+                    <div class="order-card ${statusClass}" data-id="${order.id}">
+                        <div class="order-meta">
+                            <span>${tableBadge}#${order.id.slice(-6)}</span>
+                            <span class="timer" style="color: ${age.startsWith('5') || age.startsWith('1') && age.length > 4 ? 'var(--error)' : 'inherit'}"><i class="far fa-clock"></i> ${age}</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--primary); margin-bottom: 5px; font-weight: bold;">
+                            <i class="fas fa-user" style="margin-right: 5px;"></i>${customerName} <br>
+                            <i class="fas fa-phone" style="margin-right: 5px; margin-top: 3px;"></i>${customerPhone}
+                        </div>
+                        <div class="order-items">
+                            <ul class="order-item-list">
+                                ${itemsList}
+                            </ul>
+                        </div>
+                        <button class="glass-btn" style="width: 100%; font-size: 0.8rem; padding: 5px;" onclick="updateStatus('${order.id}', '${nextStatus}')">
+                            ${btnText}
+                        </button>
+                    </div>
+                `;
+            });
+
+            if (orders.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">Empty</p>';
+            }
+        }
+
+        function updateReadyColumn(containerId, orders) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            const users = Storage.get('users') || [];
+
+            orders.forEach(order => {
+                let customerName = 'Guest';
+                let customerPhone = Storage.normalizePhone(order.customerPhone ?? order.customerId) || (order.customerId || '');
+                const linkedUserId = order.customerUserId || (users.find(u => u.id === order.customerId) ? order.customerId : null);
+                const foundCustomer = linkedUserId ? users.find(u => u.id === linkedUserId) : null;
+                if (foundCustomer) {
+                    customerName = foundCustomer.name;
+                    customerPhone = Storage.normalizePhone(foundCustomer.phone) || foundCustomer.phone;
+                }
+
+                const tableBadge = order.tableNumber ? `<span class="badge" style="background:var(--primary); color:white; font-size:0.7rem; margin-right:5px;">Table ${order.tableNumber}</span>` : '';
+
+                container.innerHTML += `
+                    <div class="order-card" style="border-left-color: #4caf50; opacity: 0.8;">
+                        <div class="order-meta">
+                            <span>${tableBadge}#${order.id.slice(-6)}</span>
+                            <span>Waiting on Server</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--primary); margin-bottom: 5px; font-weight: bold;">
+                            <i class="fas fa-user" style="margin-right: 5px;"></i>${customerName} <br>
+                            <i class="fas fa-phone" style="margin-right: 5px; margin-top: 3px;"></i>${customerPhone}
+                        </div>
+                        <p style="font-size: 0.85rem; margin: 5px 0;">${order.items.length} items</p>
+                    </div>
+                `;
+            });
+            if (orders.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">Empty</p>';
+            }
+        }
+
+        function updateStatus(id, newStatus) {
+            // Find card and animate out
+            const card = document.querySelector(`.order-card[data-id="${id}"]`);
+            if (card) {
+                card.style.animation = 'fadeOut 0.3s ease-out forwards';
+            }
+            setTimeout(() => {
+                KitchenServices.updateOrderStatus(id, newStatus);
+                loadBoard();
+            }, 300);
+        }
+
+        function checkStock() {
+            const menu = Storage.get('menu');
+            const lowStock = menu.filter(m => m.stock < 10);
+            const container = document.getElementById('alertList');
+
+            if (lowStock.length === 0) {
+                document.getElementById('stockAlerts').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('stockAlerts').style.display = 'block';
+            container.innerHTML = lowStock.map(item => `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>${item.name}</span>
+                    <strong style="color: ${item.stock === 0 ? 'var(--error)' : 'var(--primary)'}">${item.stock} left</strong>
+                </div>
+            `).join('');
+        }
+
+        // Custom animation for blink
+        const style = document.createElement('style');
+        style.innerHTML = `@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }`;
+        document.head.appendChild(style);
+    </script>
+</body>
+
+</html>

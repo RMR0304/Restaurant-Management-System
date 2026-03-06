@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard - RMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="assets/Kannadi Bhai Biryani.png">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar glass">
+            <div class="sidebar-header" style="cursor: pointer;" onclick="window.location.href='index.html'">
+                <h2>RMS</h2>
+            </div>
+            <ul class="sidebar-menu">
+                <!-- Dynamically populated by ui.js -->
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar glass">
+                <button id="sidebarToggle" class="glass-btn menu-btn" style="display: none;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h3>Customer Dashboard</h3>
+                <div class="user-profile">
+                    <div class="avatar" id="userAvatar">C</div>
+                    <div class="user-info">
+                        <span id="profileName">Guest</span>
+                        <small id="profileRole" style="display:block; color:var(--text-secondary)">Customer</small>
+                    </div>
+                </div>
+            </header>
+
+            <div class="dashboard-grid">
+                <div class="stat-card glass" onclick="window.location.href='menu.html'" style="cursor: pointer;">
+                    <div class="stat-icon"><i class="fas fa-utensils"></i></div>
+                    <div class="stat-details">
+                        <h3>Our Menu</h3>
+                        <p>Browse & Order</p>
+                    </div>
+                </div>
+                <div class="stat-card glass" onclick="window.location.href='order.html'" style="cursor: pointer;">
+                    <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                    <div class="stat-details">
+                        <h3>Active Cart</h3>
+                        <p id="cartItemsCount">0 Items</p>
+                    </div>
+                </div>
+                <div class="stat-card glass" onclick="window.location.href='history.html'" style="cursor: pointer;">
+                    <div class="stat-icon"><i class="fas fa-history"></i></div>
+                    <div class="stat-details">
+                        <h3>Order History</h3>
+                        <p id="totalOrdersCount">0 Orders</p>
+                    </div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-details">
+                        <h3>Loyalty Points</h3>
+                        <h2 id="pointsDisplay">0</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass" style="padding: 20px; margin-top: 30px;">
+                <h3 style="margin-bottom: 20px;">Recent Activity</h3>
+                <div class="table-container">
+                    <table class="styled-table" id="recentActivityTable">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Items</th>
+                                <th>Status</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Populated dynamically -->
+                            <tr>
+                                <td colspan="5" style="text-align:center;">No recent activity</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/customer.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            UI.setupSidebar();
+            CustomerServices.updateDashboard();
+        });
+    </script>
+</body>
+
+</html>

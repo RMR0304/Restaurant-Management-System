@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - RMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="assets/Kannadi Bhai Biryani.png">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar glass">
+            <div class="sidebar-header" style="cursor: pointer;" onclick="window.location.href='index.html'">
+                <h2>RMS</h2>
+            </div>
+            <ul class="sidebar-menu"></ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar glass">
+                <button id="sidebarToggle" class="glass-btn menu-btn" style="display: none;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h3>System Architecture & Stats</h3>
+                <div class="user-profile">
+                    <div class="avatar" id="userAvatar">A</div>
+                    <div class="user-info">
+                        <span id="profileName">Admin</span>
+                        <small id="profileRole">Super User</small>
+                    </div>
+                </div>
+            </header>
+
+            <div class="dashboard-grid">
+                <div class="stat-card glass">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-details">
+                        <h3>Total Revenue</h3>
+                        <h2 id="totalRevenue">Rs. 0</h2>
+                    </div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-details">
+                        <h3>Total Users</h3>
+                        <h2 id="totalUsers">0</h2>
+                    </div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
+                    <div class="stat-details">
+                        <h3>Total Orders</h3>
+                        <h2 id="totalOrders">0</h2>
+                    </div>
+                </div>
+                <div class="stat-card glass">
+                    <div class="stat-icon"><i class="fas fa-crown"></i></div>
+                    <div class="stat-details">
+                        <h3>Top Item</h3>
+                        <p id="topItem" style="font-size: 1.2rem; font-weight: bold; color: var(--primary)"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Management Section -->
+            <div class="glass" style="padding: 20px; margin-top: 30px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>
+                        <select id="manageType" class="glass-input"
+                            style="width: auto; font-size: 1.2rem; font-weight: bold; padding: 5px; background: transparent; border: none; outline: none; border-bottom: 2px solid var(--primary); border-radius: 0; color: var(--primary);"
+                            onchange="switchManageView()">
+                            <option value="employees" style="background: var(--surface)">Employee Management</option>
+                            <option value="customers" style="background: var(--surface)">Customer Details</option>
+                        </select>
+                    </h3>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+                        <button class="glass-btn" id="addEmpBtn" onclick="UI.showModal('addEmpModal')"><i
+                                class="fas fa-plus"></i> Add Employee</button>
+                        <button class="glass-btn" id="clearCustomersBtn" style="color:var(--error); border-color:var(--error); display:none;"
+                            onclick="clearCustomers()"><i class="fas fa-eraser"></i> Clear Customers</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="styled-table" id="dataTable">
+                        <thead id="dataHead">
+                            <tr>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Phone</th>
+                                <th>Emp ID</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Employee Modal -->
+    <div class="modal-overlay" id="addEmpModal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2>Add Employee</h2>
+                <button class="close-btn" onclick="UI.closeModal('addEmpModal')">×</button>
+            </div>
+            <form id="addEmpForm" style="display: flex; flex-direction: column; gap: 15px;">
+                <input type="text" id="eName" class="glass-input" placeholder="Full Name" required>
+                <input type="text" id="ePhone" class="glass-input" placeholder="Phone Number" required>
+                <select id="eRole" class="glass-input" required style="background: var(--surface)">
+                    <option value="server">Server</option>
+                    <option value="kitchen">Kitchen Staff</option>
+                    <option value="admin">Admin</option>
+                </select>
+                <input type="text" id="eId" class="glass-input" placeholder="Employee ID (e.g. S002)" required>
+                <button type="submit" class="glass-btn" style="margin-top: 10px;">Save changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            UI.setupSidebar();
+            loadStats();
+            loadEmployees();
+        });
+
+        function loadStats() {
+            const stats = AdminServices.getStats();
+            document.getElementById('totalRevenue').textContent = `Rs. ${stats.totalRevenue.toFixed(2)}`;
+            document.getElementById('totalUsers').textContent = stats.totalUsers;
+            document.getElementById('totalOrders').textContent = stats.totalOrders;
+            document.getElementById('topItem').textContent = stats.topItem;
+        }
+
+        function loadEmployees() {
+            const users = Storage.get('users').filter(u => u.role !== 'customer');
+            const tbody = document.getElementById('dataBody');
+            const thead = document.getElementById('dataHead');
+
+            thead.innerHTML = `<tr><th>Name</th><th>Role</th><th>Phone</th><th>Emp ID</th><th>Action</th></tr>`;
+            tbody.innerHTML = '';
+
+            users.forEach(u => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${u.name}</td>
+                        <td style="text-transform: capitalize;">${u.role}</td>
+                        <td>${u.phone}</td>
+                        <td>${u.employeeId}</td>
+                        <td>
+                            <button class="glass-btn" style="color:var(--error); border-color:var(--error); padding: 5px 10px; font-size: 0.8rem;" onclick="removeEmp('${u.phone}')">Remove</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function loadCustomers() {
+            const users = Storage.get('users').filter(u => u.role === 'customer');
+            const tbody = document.getElementById('dataBody');
+            const thead = document.getElementById('dataHead');
+
+            thead.innerHTML = `<tr><th>Name</th><th>Phone</th><th>Loyalty Points</th><th>Action</th></tr>`;
+            tbody.innerHTML = '';
+
+            users.forEach(u => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${u.name}</td>
+                        <td>${u.phone}</td>
+                        <td>${u.loyaltyPoints || 0}</td>
+                        <td>-</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function switchManageView() {
+            const type = document.getElementById('manageType').value;
+            if (type === 'employees') {
+                document.getElementById('addEmpBtn').style.display = 'inline-flex';
+                document.getElementById('clearCustomersBtn').style.display = 'none';
+                loadEmployees();
+            } else {
+                document.getElementById('addEmpBtn').style.display = 'none';
+                document.getElementById('clearCustomersBtn').style.display = 'inline-flex';
+                loadCustomers();
+            }
+        }
+
+        function clearCustomers() {
+            const ok = confirm('This will remove ALL customer accounts from LocalStorage.\n\nOrders will NOT be deleted — they will be kept as guest-by-phone.\n\nContinue?');
+            if (!ok) return;
+            const result = Storage.clearCustomers();
+            UI.showToast(`Cleared ${result.removedCustomers} customers`, 'success');
+            loadCustomers();
+            loadStats();
+        }
+
+        function removeEmp(phone) {
+            if (confirm('Are you sure you want to remove this employee?')) {
+                AdminServices.handleEmployeeAction('delete', { phone });
+                loadEmployees();
+                loadStats();
+            }
+        }
+
+        document.getElementById('addEmpForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('eName').value;
+            const phone = document.getElementById('ePhone').value;
+            const role = document.getElementById('eRole').value;
+            const empId = document.getElementById('eId').value;
+
+            // Simple class generation based on role selection
+            let newEmp;
+            if (role === 'server') newEmp = new Server('u' + Date.now(), name, phone, empId, [2, 5]);
+            else if (role === 'kitchen') newEmp = new KitchenStaff('u' + Date.now(), name, phone, empId);
+            else if (role === 'admin') newEmp = new Admin('u' + Date.now(), name, phone, empId);
+
+            AdminServices.handleEmployeeAction('add', newEmp.toJSON());
+
+            UI.closeModal('addEmpModal');
+            loadEmployees();
+            loadStats();
+            e.target.reset();
+        });
+    </script>
+</body>
+
+</html>

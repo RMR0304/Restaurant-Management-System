@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kannadi Bhai Restaurant — Order in Seconds</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="assets/Kannadi Bhai Biryani.png">
+    <style>
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            user-select: none;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .form-section {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .form-section.active {
+            display: flex;
+        }
+
+        .auth-card {
+            text-align: left;
+        }
+
+        .auth-card h1 {
+            text-align: center;
+        }
+
+        .mini-note {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.4;
+        }
+
+        .kbd {
+            display: inline-block;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.78rem;
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="landing-shell">
+        <header class="landing-topbar glass">
+            <div class="brand-lockup">
+                <div class="brand-mark"><i class="fas fa-utensils"></i></div>
+                <div class="brand-title">
+                    <strong>Kannadi Bhai Restaurant</strong>
+                    <span>Hot • Fast • Fresh</span>
+                </div>
+            </div>
+
+            <nav class="landing-nav">
+                <a href="#featured">Featured</a>
+                <a href="#why">Why us</a>
+                <a href="#how">How it works</a>
+                <button class="glass-btn" id="loginBtnTop"><i class="fas fa-sign-in-alt"></i> Login</button>
+                <button class="glass-btn primary" id="orderNowBtnTop"><i class="fas fa-bolt"></i> Order now</button>
+            </nav>
+        </header>
+
+        <section class="hero">
+            <div class="glass hero-card reveal">
+                <div class="hero-copy">
+                    <div class="hero-kicker"><i class="fas fa-fire"></i> Today’s specials are moving fast</div>
+                    <h1 class="hero-headline">Crave it. Tap it. <em>Eat happy.</em></h1>
+                    <p class="hero-subtitle">
+                        Welcome to Kannadi Bhai Restaurant — where comfort food meets quick service.
+                        Browse the menu, build your order, and let the kitchen do the magic.
+                    </p>
+
+                    <div class="hero-cta">
+                        <button class="glass-btn primary" id="orderNowBtnHero"><i class="fas fa-cart-plus"></i> Start
+                            ordering</button>
+                        <button class="glass-btn" id="openAuthBtnHero"><i class="fas fa-user"></i> Login / Register</button>
+                        <a class="glass-btn" href="#featured"><i class="fas fa-star"></i> See favorites</a>
+                    </div>
+
+                    <div class="hero-meta">
+                        <div class="hero-pill">
+                            <i class="fas fa-phone"></i>
+                            <div>
+                                <b>Phone-first ordering</b>
+                                <small>Guest or registered — history never lost</small>
+                            </div>
+                        </div>
+                        <div class="hero-pill">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <b>Fast kitchen flow</b>
+                                <small>Pending → Preparing → Ready</small>
+                            </div>
+                        </div>
+                        <div class="hero-pill">
+                            <i class="fas fa-award"></i>
+                            <div>
+                                <b>Loyalty points</b>
+                                <small>Earn on every order</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass hero-visual reveal" id="heroVisual">
+                <img class="visual-img" id="heroImg"
+                    src="./assets/Kannadi Bhai Biryani.png"
+                    alt="Food platter">
+                <div class="floating-badge">
+                    <i class="fas fa-sparkles"></i>
+                    <div>
+                        <div style="font-weight:700;">Chef’s Pick</div>
+                        <div style="color:var(--text-secondary); font-size:0.85rem;">Spicy, smoky, satisfying</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="marquee glass reveal" aria-label="highlights">
+            <div class="marquee-track" id="marqueeTrack">
+                <span class="marquee-item"><i class="fas fa-pepper-hot"></i> Masala magic</span>
+                <span class="marquee-item"><i class="fas fa-bread-slice"></i> Fresh buns</span>
+                <span class="marquee-item"><i class="fas fa-lemon"></i> Zesty drinks</span>
+                <span class="marquee-item"><i class="fas fa-cheese"></i> Loaded toppings</span>
+                <span class="marquee-item"><i class="fas fa-fire"></i> Served hot</span>
+                <span class="marquee-item"><i class="fas fa-pepper-hot"></i> Masala magic</span>
+                <span class="marquee-item"><i class="fas fa-bread-slice"></i> Fresh buns</span>
+                <span class="marquee-item"><i class="fas fa-lemon"></i> Zesty drinks</span>
+                <span class="marquee-item"><i class="fas fa-cheese"></i> Loaded toppings</span>
+                <span class="marquee-item"><i class="fas fa-fire"></i> Served hot</span>
+            </div>
+        </div>
+
+        <section class="section" id="featured">
+            <div class="section-head reveal">
+                <div>
+                    <h2>Featured favorites</h2>
+                    <p>Handpicked crowd-pleasers. Hover to feel the glow — click to order in seconds.</p>
+                </div>
+                <button class="glass-btn" id="shuffleBtn"><i class="fas fa-random"></i> Shuffle picks</button>
+            </div>
+
+            <div class="featured-grid">
+                <div class="glass feature-card reveal" data-img="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1400">
+                    <img class="feature-img" src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=900"
+                        alt="Burger">
+                    <div class="feature-body">
+                        <div class="feature-title">
+                            <strong>Classic Burger</strong>
+                            <span>Rs. 12.99</span>
+                        </div>
+                        <p>Juicy, stacked, and dangerously satisfying. The “one more bite” kind of burger.</p>
+                        <div class="feature-actions">
+                            <button class="glass-btn primary" data-order><i class="fas fa-cart-plus"></i> Order this</button>
+                            <a class="glass-btn" href="#how"><i class="fas fa-info-circle"></i> How to order</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass feature-card reveal" data-img="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=1400">
+                    <img class="feature-img" src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=900"
+                        alt="Pizza">
+                    <div class="feature-body">
+                        <div class="feature-title">
+                            <strong>Margherita Pizza</strong>
+                            <span>Rs. 14.99</span>
+                        </div>
+                        <p>Cheesy, herby, crispy edges — a simple pizza that never misses.</p>
+                        <div class="feature-actions">
+                            <button class="glass-btn primary" data-order><i class="fas fa-cart-plus"></i> Order this</button>
+                            <a class="glass-btn" href="#why"><i class="fas fa-heart"></i> Why people love it</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass feature-card reveal" data-img="https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=1400">
+                    <img class="feature-img" src="https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=900"
+                        alt="Dessert">
+                    <div class="feature-body">
+                        <div class="feature-title">
+                            <strong>Lava Cake</strong>
+                            <span>Rs. 6.99</span>
+                        </div>
+                        <p>Warm chocolate core, soft sponge, instant mood upgrade. Don’t skip dessert.</p>
+                        <div class="feature-actions">
+                            <button class="glass-btn primary" data-order><i class="fas fa-cart-plus"></i> Order this</button>
+                            <button class="glass-btn" id="swapHeroBtn"><i class="fas fa-image"></i> See it close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="why">
+            <div class="section-head reveal">
+                <div>
+                    <h2>Why Kannadi Bhai?</h2>
+                    <p>Because food should be exciting, fast, and unforgettable.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="glass stat-card reveal">
+                    <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="stat-details">
+                        <h3>Quick ordering</h3>
+                        <h2 style="font-size: 1.2rem;">Fewer taps, faster checkout</h2>
+                    </div>
+                </div>
+                <div class="glass stat-card reveal">
+                    <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="stat-details">
+                        <h3>Guest friendly</h3>
+                        <h2 style="font-size: 1.2rem;">Phone number is enough</h2>
+                    </div>
+                </div>
+                <div class="glass stat-card reveal">
+                    <div class="stat-icon"><i class="fas fa-history"></i></div>
+                    <div class="stat-details">
+                        <h3>Order history</h3>
+                        <h2 style="font-size: 1.2rem;">Even before registration</h2>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="how">
+            <div class="section-head reveal">
+                <div>
+                    <h2>How it works</h2>
+                    <p>
+                        Customers can order as guests or registered users. Servers can take orders by phone.
+                        Your order always stays linked by phone number.
+                    </p>
+                </div>
+            </div>
+
+            <div class="glass reveal" style="padding: 18px;">
+                <div style="display:grid; gap: 12px; color: var(--text-secondary); line-height:1.6;">
+                    <div><b style="color:var(--text-primary)"><i class="fas fa-mobile-alt"></i> Guest:</b> Enter phone →
+                        choose items →
+                        place order.</div>
+                    <div><b style="color:var(--text-primary)"><i class="fas fa-user"></i> Register later:</b> Same phone →
+                        we auto-link old orders.</div>
+                    <div><b style="color:var(--text-primary)"><i class="fas fa-concierge-bell"></i> Server flow:</b> Assign
+                        table → take draft order → review → send to kitchen.</div>
+                    <div class="mini-note">Tip: Use the seeded accounts and password <span class="kbd">password</span> to
+                        test roles.</div>
+                    <div style="display:flex; gap: 10px; flex-wrap: wrap; margin-top: 4px;">
+                        <button class="glass-btn primary" id="orderNowBtnHow"><i class="fas fa-cart-plus"></i> Order now</button>
+                        <button class="glass-btn" id="openAuthBtnHow"><i class="fas fa-sign-in-alt"></i> Login / Register</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="landing-footer">
+            <div class="reveal">
+                <div style="font-weight:700; color: var(--text-primary);">Kannadi Bhai Restaurant</div>
+                <div>Built with RMS • LocalStorage demo • Designed to make you hungry</div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="authModal" aria-hidden="true">
+        <div class="modal-content glass auth-card" style="max-width: 420px;">
+            <div class="modal-header">
+                <h2 style="margin:0;">Welcome</h2>
+                <button class="close-btn" onclick="UI.closeModal('authModal')">×</button>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" id="tabLogin" onclick="switchTab('login')">Login</div>
+                <div class="tab" id="tabRegister" onclick="switchTab('register')">Register</div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form form-section active">
+                <input type="text" id="loginPhone" class="glass-input" placeholder="Phone Number (e.g. 1234567890)"
+                    required>
+                <input type="password" id="loginPass" class="glass-input" placeholder="Password (default: password)"
+                    required>
+                <button type="submit" class="glass-btn primary"><i class="fas fa-sign-in-alt"></i> Login</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="auth-form form-section">
+                <input type="text" id="regName" class="glass-input" placeholder="Full Name" required>
+                <input type="text" id="regPhone" class="glass-input" placeholder="Phone Number" required>
+                <input type="password" id="regPass" class="glass-input" placeholder="Password" required>
+                <input type="password" id="regPassConfirm" class="glass-input" placeholder="Confirm Password" required>
+                <button type="submit" class="glass-btn primary"><i class="fas fa-user-plus"></i> Register</button>
+            </form>
+
+            <details style="margin-top: 14px;">
+                <summary style="cursor:pointer; color: var(--text-secondary);">Demo users (for testing)</summary>
+                <div id="demoUsers"
+                    style="color:var(--text-secondary); font-size: 0.85rem; margin-top: 10px; max-height: 130px; overflow-y: auto;">
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        function redirectByRole(user) {
+            if (!user) return;
+            if (user.role === 'customer') window.location.href = 'dashboard.html';
+            else if (user.role === 'admin') window.location.href = 'admin.html';
+            else if (user.role === 'server') window.location.href = 'server.html';
+            else if (user.role === 'kitchen') window.location.href = 'kitchen.html';
+        }
+
+        function openAuth(tab = 'login') {
+            switchTab(tab);
+            UI.showModal('authModal');
+            document.getElementById('authModal').setAttribute('aria-hidden', 'false');
+            setTimeout(() => {
+                const el = tab === 'login' ? document.getElementById('loginPhone') : document.getElementById('regName');
+                if (el) el.focus();
+            }, 0);
+        }
+
+        function loadDemoUsers() {
+            const users = Storage.get('users') || [];
+            const container = document.getElementById('demoUsers');
+            if (container) {
+                container.innerHTML = users.map(u => `<div><b>${u.role}</b>: ${u.phone}</div>`).join('');
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.form-section').forEach(f => f.classList.remove('active'));
+
+            if (tab === 'login') {
+                document.getElementById('tabLogin').classList.add('active');
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.getElementById('tabRegister').classList.add('active');
+                document.getElementById('registerForm').classList.add('active');
+            }
+        }
+
+        function orderNow() {
+            const user = Storage.get('currentUser');
+            if (!user) {
+                openAuth('login');
+                UI.showToast('Login as customer to start ordering', 'info');
+                return;
+            }
+            redirectByRole(user);
+        }
+
+        // Smooth scroll for anchors
+        document.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', (e) => {
+                const id = a.getAttribute('href').slice(1);
+                const el = document.getElementById(id);
+                if (!el) return;
+                e.preventDefault();
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // Reveal on scroll
+        function setupReveal() {
+            const els = document.querySelectorAll('.reveal');
+            const io = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) entry.target.classList.add('visible');
+                });
+            }, { threshold: 0.18 });
+            els.forEach(el => io.observe(el));
+        }
+
+        // Interactive hero image swap on hover & button
+        const heroImages = [
+            "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=1400",
+            "https://images.unsplash.com/photo-1550547660-d9450f859349?w=1400",
+            "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1400",
+            "https://images.unsplash.com/photo-1604908176997-125f25cc500f?w=1400"
+        ];
+        // let heroIndex = 0;
+        // function setHeroImage(url) {
+        //     const img = document.getElementById('heroImg');
+        //     if (!img) return;
+        //     img.style.transform = 'scale(0.99)';
+        //     setTimeout(() => {
+        //         img.src = url;
+        //         img.style.transform = '';
+        //     }, 120);
+        // }
+
+        function shuffleFeatured() {
+            const cards = Array.from(document.querySelectorAll('.feature-card'));
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                cards[i].parentNode.insertBefore(cards[j], cards[i]);
+            }
+            UI.showToast('Shuffled picks', 'success');
+        }
+
+        // Wire up buttons
+        document.getElementById('loginBtnTop').addEventListener('click', () => openAuth('login'));
+        document.getElementById('openAuthBtnHero').addEventListener('click', () => openAuth('login'));
+        document.getElementById('openAuthBtnHow').addEventListener('click', () => openAuth('login'));
+        document.getElementById('orderNowBtnTop').addEventListener('click', orderNow);
+        document.getElementById('orderNowBtnHero').addEventListener('click', orderNow);
+        document.getElementById('orderNowBtnHow').addEventListener('click', orderNow);
+        document.getElementById('shuffleBtn').addEventListener('click', shuffleFeatured);
+        document.getElementById('swapHeroBtn').addEventListener('click', () => {
+            heroIndex = (heroIndex + 1) % heroImages.length;
+            setHeroImage(heroImages[heroIndex]);
+        });
+
+        document.querySelectorAll('[data-order]').forEach(btn => btn.addEventListener('click', orderNow));
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                const img = card.getAttribute('data-img');
+                if (img) setHeroImage(img);
+            });
+        });
+
+        // Forms
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const phone = document.getElementById('loginPhone').value;
+            const pass = document.getElementById('loginPass').value;
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+
+            try {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+                btn.disabled = true;
+                const user = await AuthService.login(phone, pass);
+                UI.showToast(`Welcome back, ${user.name}!`, 'success');
+                setTimeout(() => redirectByRole(user), 650);
+            } catch (error) {
+                UI.showToast(error, 'error');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('regName').value;
+            const phone = document.getElementById('regPhone').value;
+            const pass = document.getElementById('regPass').value;
+            const passConfirm = document.getElementById('regPassConfirm').value;
+
+            if (pass !== passConfirm) {
+                UI.showToast('Passwords do not match', 'error');
+                return;
+            }
+
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+
+            try {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+                btn.disabled = true;
+                const user = await AuthService.register(name, phone, pass);
+                UI.showToast('Registration successful!', 'success');
+                setTimeout(() => redirectByRole(user), 650);
+            } catch (error) {
+                UI.showToast(error, 'error');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // ESC closes auth modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') UI.closeModal('authModal');
+        });
+
+        // Initial load
+        window.addEventListener('DOMContentLoaded', () => {
+            setupReveal();
+            loadDemoUsers();
+        });
+
+        // Redirect if already logged in
+        window.addEventListener('load', () => {
+            const user = Storage.get('currentUser');
+            if (user) redirectByRole(user);
+        });
+    </script>
+</body>
+
+</html>

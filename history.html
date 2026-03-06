@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order History - RMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="assets/Kannadi Bhai Biryani.png">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar glass">
+            <div class="sidebar-header" style="cursor: pointer;" onclick="window.location.href='index.html'">
+                <h2>RMS</h2>
+            </div>
+            <ul class="sidebar-menu"></ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar glass">
+                <button id="sidebarToggle" class="glass-btn menu-btn" style="display: none;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h3>Order History</h3>
+                <div class="user-profile">
+                    <div class="avatar" id="userAvatar">H</div>
+                    <div class="user-info">
+                        <span id="profileName">User</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="glass" style="padding: 20px;">
+                <div class="table-container">
+                    <table class="styled-table" id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date & Time</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody">
+                            <!-- Populated dynamically -->
+                            <tr>
+                                <td colspan="6" style="text-align:center;">No history found</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Review Modal -->
+    <div class="modal-overlay" id="reviewModal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2>Leave a Review</h2>
+                <button class="close-btn" onclick="UI.closeModal('reviewModal')">×</button>
+            </div>
+            <div
+                style="display: flex; gap: 10px; font-size: 24px; color: gold; justify-content: center; margin-bottom: 20px;">
+                <i class="fas fa-star" style="cursor: pointer;"></i>
+                <i class="fas fa-star" style="cursor: pointer;"></i>
+                <i class="fas fa-star" style="cursor: pointer;"></i>
+                <i class="far fa-star" style="cursor: pointer;"></i>
+                <i class="far fa-star" style="cursor: pointer;"></i>
+            </div>
+            <textarea class="glass-input" rows="4" placeholder="Tell us about your experience..."
+                style="margin-bottom: 20px;"></textarea>
+            <button class="glass-btn" style="width: 100%;" onclick="submitReview()">Submit Feedback</button>
+        </div>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            UI.setupSidebar();
+            loadHistory();
+        });
+
+        function loadHistory() {
+            const user = Storage.get('currentUser');
+            const orders = Storage.get('orders') || [];
+
+            let myOrders = orders;
+            // Filter only for customer, else show all like admin/server
+            if (user.role === 'customer') {
+                // Ensure any prior guest orders get linked, then show full history.
+                Storage.linkGuestOrdersToUserByPhone(user.phone, user.id);
+                const myPhone = Storage.normalizePhone(user.phone);
+                myOrders = orders.filter(o => {
+                    const orderUserId = o.customerUserId || o.customerId;
+                    const orderPhone = Storage.normalizePhone(o.customerPhone ?? o.customerId);
+                    return orderUserId === user.id || (myPhone && orderPhone === myPhone);
+                });
+            }
+            myOrders = myOrders.sort((a, b) => b.timestamp - a.timestamp);
+
+            const tbody = document.getElementById('historyBody');
+
+            if (myOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No history found</td></tr>';
+                return;
+            }
+
+            const users = Storage.get('users') || [];
+
+            tbody.innerHTML = '';
+            myOrders.forEach(order => {
+                const date = new Date(order.timestamp).toLocaleString();
+                const itemsList = order.items.map(i => `${i.quantity}x ${i.menuItem.name}`).join(', ');
+                const statusClass = order.status.toLowerCase();
+
+                let customerName = 'Guest';
+                let customerPhone = Storage.normalizePhone(order.customerPhone ?? order.customerId) || '';
+                const linkedUserId = order.customerUserId || (users.find(u => u.id === order.customerId) ? order.customerId : null);
+                const foundCustomer = linkedUserId ? users.find(u => u.id === linkedUserId) : null;
+                if (foundCustomer) {
+                    customerName = foundCustomer.name;
+                    customerPhone = Storage.normalizePhone(foundCustomer.phone) || foundCustomer.phone;
+                }
+
+                let customerDisplay = `
+                    <div style="font-size:0.9rem; font-weight:bold; color:var(--text-primary); text-align: left;">${customerName}</div>
+                    <div style="font-size:0.8rem; color:var(--text-secondary); text-align: left;">${customerPhone}</div>
+                `;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${order.id.slice(-6)}</td>
+                        <td>${date}</td>
+                        <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${itemsList}">${itemsList}</td>
+                        <td style="font-weight: bold; color: var(--primary)">Rs. ${order.totalAmount.toFixed(2)}</td>
+                        <td><span class="badge ${statusClass}">${order.status}</span></td>
+                        <td>
+                            ${(order.status === 'Completed' && user.role === 'customer') ?
+                        `<button class="glass-btn" style="padding: 5px 10px; font-size: 0.8rem;" onclick="UI.showModal('reviewModal')">Review</button>` :
+                        customerDisplay
+                    }
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function submitReview() {
+            UI.showToast('Thank you for your feedback!', 'success');
+            setTimeout(() => {
+                UI.closeModal('reviewModal');
+            }, 1000);
+        }
+    </script>
+</body>
+
+</html>

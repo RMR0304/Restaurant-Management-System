@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart & Order - RMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="assets/Kannadi Bhai Biryani.png">
+    <style>
+        .cart-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+
+        @media(max-width: 768px) {
+            .cart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .cart-item-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .cart-item-details {
+            flex: 1;
+        }
+
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+
+        .qty-btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .remove-btn {
+            color: var(--error);
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar glass">
+            <div class="sidebar-header" style="cursor: pointer;" onclick="window.location.href='index.html'">
+                <h2>RMS</h2>
+            </div>
+            <ul class="sidebar-menu"></ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar glass">
+                <button id="sidebarToggle" class="glass-btn menu-btn" style="display: none;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h3>Your Cart</h3>
+            </header>
+
+            <div class="cart-grid">
+                <!-- Cart Items -->
+                <div class="glass" style="padding: 20px;" id="cartItemsContainer">
+                    <p style="text-align: center; color: var(--text-secondary);">Cart is empty</p>
+                </div>
+
+                <!-- Summary -->
+                <div class="glass summary-card" style="padding: 20px; align-self: start;">
+                    <h3
+                        style="border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; margin-bottom: 20px;">
+                        Order Summary</h3>
+
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>Subtotal</span>
+                        <span id="subtotalDisplay">Rs. 0.00</span>
+                    </div>
+                    <div
+                        style="display: flex; justify-content: space-between; margin-bottom: 10px; color: var(--secondary)">
+                        <span>Points Discount</span>
+                        <span id="discountDisplay">-Rs. 0.00</span>
+                    </div>
+                    <div
+                        style="display: flex; justify-content: space-between; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border); font-weight: bold; font-size: 1.2rem;">
+                        <span>Total</span>
+                        <span id="totalDisplay">Rs. 0.00</span>
+                    </div>
+
+                    <div id="serverPhoneInput" style="display: none; margin-top: 20px;">
+                        <input type="text" id="orderPhone" class="glass-input" placeholder="Customer Phone (Optional)">
+                    </div>
+
+                    <button class="glass-btn" style="width: 100%; margin-top: 20px;" onclick="placeOrder()">
+                        <i class="fas fa-check-circle"></i> Place Order
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Order Status -->
+            <div id="activeOrderSection" class="glass" style="padding: 20px; margin-top: 30px; display: none;">
+                <h3>Active Order Tracker</h3>
+                <div style="display: flex; gap: 20px; align-items: center; margin-top: 20px; flex-wrap: wrap;">
+                    <div class="badge pending" id="statusPending">Pending</div>
+                    <i class="fas fa-arrow-right"></i>
+                    <div class="badge" id="statusPreparing">Preparing</div>
+                    <i class="fas fa-arrow-right"></i>
+                    <div class="badge" id="statusReady">Ready</div>
+                    <i class="fas fa-arrow-right"></i>
+                    <div class="badge" id="statusCompleted">Completed</div>
+                </div>
+                <div id="activeOrderItems" style="margin-top:20px; color: var(--text-secondary);"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal-overlay" id="paymentModal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h2>Payment Successful!</h2>
+                <button class="close-btn"
+                    onclick="UI.closeModal('paymentModal'); window.location.href='history.html'">×</button>
+            </div>
+            <p>Your order has been placed. You earned <strong id="earnedPoints" style="color:var(--primary)"></strong>
+                loyalty points!</p>
+            <div style="text-align: center; margin-top: 20px;">
+                <i class="fas fa-check-circle"
+                    style="font-size: 50px; color: #4caf50; animation: bounce 1s infinite;"></i>
+            </div>
+            <button class="glass-btn" style="width: 100%; margin-top: 20px;"
+                onclick="UI.closeModal('paymentModal'); location.reload();">Track Order</button>
+        </div>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            UI.setupSidebar();
+            renderCart();
+            checkActiveOrder();
+        });
+
+        function getCart() { return Storage.getActiveCart() || []; }
+        function setCart(cart) { Storage.setActiveCart(cart); renderCart(); }
+
+        function updateQty(index, delta) {
+            const cart = getCart();
+            cart[index].quantity += delta;
+
+            if (cart[index].quantity <= 0) {
+                cart.splice(index, 1);
+            } else if (cart[index].quantity > cart[index].menuItem.stock) {
+                cart[index].quantity = cart[index].menuItem.stock;
+                UI.showToast('Max stock reached', 'error');
+            }
+            setCart(cart);
+        }
+
+        function removeItem(index) {
+            const cart = getCart();
+            cart.splice(index, 1);
+            setCart(cart);
+        }
+
+        function renderCart() {
+            const cart = getCart();
+            const container = document.getElementById('cartItemsContainer');
+            const subtotalDisplay = document.getElementById('subtotalDisplay');
+            const totalDisplay = document.getElementById('totalDisplay');
+            const user = Storage.get('currentUser');
+            let subtotal = 0;
+
+            if (cart.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Cart is empty</p>';
+                subtotalDisplay.textContent = 'Rs. 0.00';
+                totalDisplay.textContent = 'Rs. 0.00';
+                return;
+            }
+
+            // Check if this is a table order
+            const tableNum = sessionStorage.getItem('currentOrderTable');
+            const tableHeader = tableNum ? `<div class="glass" style="padding:10px; margin-bottom:15px; border-left: 4px solid var(--primary)"><strong>Ordering for Table ${tableNum}</strong></div>` : '';
+
+            container.innerHTML = tableHeader;
+            cart.forEach((item, index) => {
+                const total = item.menuItem.price * item.quantity;
+                subtotal += total;
+
+                container.innerHTML += `
+                    <div class="cart-item">
+                        <img src="${item.menuItem.image}" class="cart-item-img">
+                        <div class="cart-item-details">
+                            <h4>${item.menuItem.name}</h4>
+                            <p style="color:var(--primary)">Rs. ${item.menuItem.price.toFixed(2)}</p>
+                        </div>
+                        <div class="qty-controls">
+                            <button class="qty-btn" onclick="updateQty(${index}, -1)"><i class="fas fa-minus"></i></button>
+                            <span style="min-width: 20px; text-align: center;">${item.quantity}</span>
+                            <button class="qty-btn" onclick="updateQty(${index}, 1)"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <div style="min-width: 60px; text-align: right; font-weight: bold;">Rs. ${total.toFixed(2)}</div>
+                        <button class="qty-btn remove-btn" onclick="removeItem(${index})"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            });
+
+            // Calculate points logic (e.g. 10 points = Rs. 1)
+            let pointsDiscount = 0;
+            if (user.loyaltyPoints > 50) {
+                // Suggest using max 50 points
+                pointsDiscount = 5;
+                document.getElementById('discountDisplay').textContent = '-Rs. 5.00 (50 pts)';
+            } else {
+                document.getElementById('discountDisplay').textContent = '-Rs. 0.00';
+            }
+
+            subtotalDisplay.textContent = `Rs. ${subtotal.toFixed(2)}`;
+            const finalTotal = Math.max(0, subtotal - pointsDiscount);
+            totalDisplay.textContent = `Rs. ${finalTotal.toFixed(2)}`;
+
+            if (user && user.role === 'server') {
+                const spDiv = document.getElementById('serverPhoneInput');
+                if (spDiv) {
+                    spDiv.style.display = 'block';
+                    const prefilledCust = sessionStorage.getItem('currentOrderCustomer');
+                    if (prefilledCust && !document.getElementById('orderPhone').value) {
+                        // Check if it's an ID or phone
+                        const users = Storage.get('users') || [];
+                        const u = users.find(u => u.id === prefilledCust);
+                        document.getElementById('orderPhone').value = u ? u.phone : prefilledCust;
+                    }
+                }
+            }
+        }
+
+        function placeOrder() {
+            const cart = getCart();
+            if (cart.length === 0) {
+                UI.showToast('Add items to cart first', 'error');
+                return;
+            }
+
+            const currentUser = Storage.get('currentUser');
+            let customerUserId = null;
+            let customerPhone = null;
+            let customerId = null; // legacy compatibility (id OR phone)
+            let targetUser = null;
+
+            if (currentUser.role === 'server') {
+                const phoneField = document.getElementById('orderPhone');
+                const rawPhone = phoneField ? phoneField.value.trim() : '';
+                const phone = Storage.normalizePhone(rawPhone);
+
+                // Per requirement: server orders are created using customer's phone number.
+                if (!phone) {
+                    UI.showToast('Enter customer phone number to place order', 'error');
+                    return;
+                }
+
+                const users = Storage.get('users') || [];
+                const foundReq = users.find(u => u.role === 'customer' && Storage.normalizePhone(u.phone) === phone);
+                if (foundReq) {
+                    customerUserId = foundReq.id;
+                    customerPhone = Storage.normalizePhone(foundReq.phone);
+                    targetUser = foundReq;
+                } else {
+                    customerUserId = null;
+                    customerPhone = phone; // guest checkout, still stored & linkable later
+                    targetUser = null;
+                }
+            }
+            else if (currentUser.role === 'customer') {
+                customerUserId = currentUser.id;
+                customerPhone = Storage.normalizePhone(currentUser.phone);
+                targetUser = currentUser;
+            } else {
+                // admin/kitchen placing an order isn't a normal flow; keep data consistent if it happens.
+                customerUserId = currentUser.id;
+                customerPhone = Storage.normalizePhone(currentUser.phone);
+                targetUser = currentUser;
+            }
+
+            customerId = customerUserId || customerPhone;
+
+            const tableNumber = sessionStorage.getItem('currentOrderTable');
+
+            const newOrder = {
+                id: 'ORD' + Date.now(),
+                customerId: customerId,
+                customerUserId: customerUserId,
+                customerPhone: customerPhone,
+                tableNumber: tableNumber ? parseInt(tableNumber) : null,
+                items: cart,
+                status: 'Pending',
+                timestamp: Date.now(),
+                totalAmount: parseFloat(document.getElementById('totalDisplay').textContent.replace(/[^\d.]/g, ''))
+            };
+
+            const orders = Storage.get('orders') || [];
+            orders.push(newOrder);
+            Storage.set('orders', orders);
+
+            let earned = 0;
+            if (targetUser && targetUser.role === 'customer') {
+                // Update user points (Earn 1 point per Rs. 10 spent)
+                earned = Math.floor(newOrder.totalAmount / 10);
+                targetUser.loyaltyPoints = (targetUser.loyaltyPoints || 0) + earned;
+
+                // Deduct points if used
+                if (targetUser.loyaltyPoints > 50 && cart.length > 0) {
+                    targetUser.loyaltyPoints -= 50;
+                }
+
+                const users = Storage.get('users');
+                const uIndex = users.findIndex(u => u.id === targetUser.id);
+                if (uIndex > -1) {
+                    users[uIndex].loyaltyPoints = targetUser.loyaltyPoints;
+                    Storage.set('users', users);
+                }
+                if (currentUser.id === targetUser.id) {
+                    Storage.set('currentUser', targetUser);
+                }
+            }
+
+            document.getElementById('earnedPoints').textContent = earned;
+            UI.showModal('paymentModal');
+
+            // Clear Cart and Session
+            // If this is a server draft cart, remove the exact draft key.
+            if (currentUser && currentUser.role === 'server') {
+                const ctx = Storage.getServerDraftContext();
+                if (ctx) {
+                    Storage.clearServerDraftCart(ctx.serverId, ctx.tableNumber, ctx.customerKey);
+                }
+            }
+            Storage.setActiveCart([]);
+            sessionStorage.removeItem('currentOrderTable');
+            sessionStorage.removeItem('currentOrderCustomer');
+            sessionStorage.removeItem('currentOrderCustomerPhone');
+        }
+
+        function checkActiveOrder() {
+            const user = Storage.get('currentUser');
+            const orders = Storage.get('orders') || [];
+
+            // Get newest imperfect order
+            const active = orders.sort((a, b) => b.timestamp - a.timestamp)
+                .find(o => (o.customerUserId || o.customerId) === user.id && o.status !== 'Completed');
+
+            if (active) {
+                document.getElementById('activeOrderSection').style.display = 'block';
+
+                ['Pending', 'Preparing', 'Ready'].forEach(s => {
+                    const el = document.getElementById('status' + s);
+                    el.className = 'badge';
+                    if (s === active.status) {
+                        el.classList.add(s.toLowerCase());
+                        el.style.boxShadow = 'var(--glow)';
+                    }
+                });
+
+                document.getElementById('activeOrderItems').innerHTML = `
+                    <p><strong>Order ID:</strong> ${active.id}</p>
+                    <p><strong>Items:</strong> ${active.items.map(i => i.quantity + 'x ' + i.menuItem.name).join(', ')}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+
+</html>

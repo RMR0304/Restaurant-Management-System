@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu - RMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="assets/Kannadi Bhai Biryani.png">
+    <style>
+        .category-scroll {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 10px 0 20px;
+        }
+
+        .category-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .category-btn {
+            white-space: nowrap;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .category-btn.active {
+            background: var(--primary);
+            color: var(--background);
+        }
+
+        .search-bar {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar glass">
+            <div class="sidebar-header" style="cursor: pointer;" onclick="window.location.href='index.html'">
+                <h2>RMS</h2>
+            </div>
+            <ul class="sidebar-menu"></ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar glass">
+                <button id="sidebarToggle" class="glass-btn menu-btn" style="display: none;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h3>Menu</h3>
+                <div class="user-profile">
+                    <div class="avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <span id="profileName">User</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="search-bar">
+                <input type="text" id="searchInput" class="glass-input" placeholder="Search menu...">
+            </div>
+
+            <div class="category-scroll" id="categoryContainer"></div>
+
+            <div class="menu-grid" id="menuGrid"></div>
+
+            <!-- Modals specific to roles will be injected via JS -->
+
+        </main>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/customer.js"></script>
+    <script src="js/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            UI.setupSidebar();
+
+            const currentUser = Storage.get('currentUser');
+            if (currentUser.role === 'customer' || currentUser.role === 'server') {
+                CustomerServices.initMenu();
+            } else if (currentUser.role === 'admin' || currentUser.role === 'kitchen') {
+                AdminServices.initMenu();
+            }
+
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const items = document.querySelectorAll('.menu-card');
+                items.forEach(item => {
+                    const name = item.querySelector('.menu-title').textContent.toLowerCase();
+                    item.style.display = name.includes(term) ? 'flex' : 'none';
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

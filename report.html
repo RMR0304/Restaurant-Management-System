@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics & Reports - RMS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="assets/Kannadi Bhai Biryani.png">
+    <!-- Chart.js for reports -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2pdf for exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        .chart-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .report-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        @media(max-width: 768px) {
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar glass">
+            <div class="sidebar-header" style="cursor: pointer;" onclick="window.location.href='index.html'">
+                <h2>RMS</h2>
+            </div>
+            <ul class="sidebar-menu"></ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar glass">
+                <button id="sidebarToggle" class="glass-btn menu-btn" style="display: none;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h3>Analytics & Reports</h3>
+                <div class="user-profile">
+                    <div class="avatar" id="userAvatar">A</div>
+                    <div class="user-info">
+                        <span id="profileName">Admin</span>
+                        <small id="profileRole">Super User</small>
+                    </div>
+                </div>
+            </header>
+
+            <div class="glass" style="padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0;"><i class="fas fa-calendar-day"></i> Summary</h3>
+                    <button class="glass-btn" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> Export to
+                        PDF</button>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="stat-card glass" style="background: rgba(187,134,252,0.1);">
+                        <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                        <div class="stat-details">
+                            <h3>Total Revenue</h3>
+                            <h2 id="totalRevenueReport" style="color:var(--primary)">Rs. 0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card glass" style="background: rgba(3,218,198,0.1);">
+                        <div class="stat-icon"><i class="fas fa-chart-pie"></i></div>
+                        <div class="stat-details">
+                            <h3>Total Orders</h3>
+                            <h2 id="totalOrdersReport" style="color:var(--secondary)">0</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="report-grid">
+                <!-- Top Items Chart -->
+                <div class="chart-container glass">
+                    <h3 style="text-align: center; margin-bottom: 20px; font-weight: 500;">Item Sales Distribution</h3>
+                    <canvas id="itemChart"></canvas>
+                </div>
+
+                <!-- Order Status Chart -->
+                <div class="chart-container glass">
+                    <h3 style="text-align: center; margin-bottom: 20px; font-weight: 500;">Order Status Distribution
+                    </h3>
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass" style="padding: 20px; margin-top: 30px;">
+                <h3 style="margin-bottom: 20px;">Daily Sales Log</h3>
+                <div class="table-container">
+                    <table class="styled-table" id="salesTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Orders</th>
+                                <th>Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            UI.setupSidebar();
+            generateReports();
+        });
+
+        function generateReports() {
+            const orders = Storage.get('orders') || [];
+
+            // Stats
+            const totalRev = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+            document.getElementById('totalRevenueReport').textContent = `Rs. ${totalRev.toFixed(2)}`;
+            document.getElementById('totalOrdersReport').textContent = orders.length;
+
+            // Prepare Data for Charts
+            const itemCounts = {};
+            const statusCounts = { Pending: 0, Preparing: 0, Ready: 0, Completed: 0 };
+            const dailySales = {};
+
+            orders.forEach(o => {
+                // Status distribution
+                if (statusCounts[o.status] !== undefined) statusCounts[o.status]++;
+
+                // Item distribution
+                o.items.forEach(i => {
+                    itemCounts[i.menuItem.name] = (itemCounts[i.menuItem.name] || 0) + i.quantity;
+                });
+
+                // Daily sales
+                const dateStr = new Date(o.timestamp).toLocaleDateString();
+                if (!dailySales[dateStr]) dailySales[dateStr] = { orders: 0, revenue: 0 };
+                dailySales[dateStr].orders++;
+                dailySales[dateStr].revenue += o.totalAmount;
+            });
+
+            // Status Chart (Doughnut)
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(statusCounts),
+                    datasets: [{
+                        data: Object.values(statusCounts),
+                        backgroundColor: [
+                            'rgba(255, 193, 7, 0.7)',  // Pending
+                            'rgba(33, 150, 243, 0.7)', // Preparing
+                            'rgba(76, 175, 80, 0.7)',  // Ready
+                            'rgba(158, 158, 158, 0.7)' // Completed
+                        ],
+                        borderColor: 'transparent',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.8)' } }
+                    }
+                }
+            });
+
+            // Item Sales Chart (Bar)
+            const sortedItems = Object.entries(itemCounts).sort((a, b) => b[1] - a[1]).slice(0, 5); // Top 5
+            const ctxItems = document.getElementById('itemChart').getContext('2d');
+            new Chart(ctxItems, {
+                type: 'bar',
+                data: {
+                    labels: sortedItems.map(i => i[0]),
+                    datasets: [{
+                        label: 'Units Sold',
+                        data: sortedItems.map(i => i[1]),
+                        backgroundColor: 'rgba(187, 134, 252, 0.7)',
+                        borderColor: 'rgba(187, 134, 252, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.6)' } },
+                        x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.6)' } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            // Populate Daily Table
+            const tbody = document.getElementById('salesBody');
+            tbody.innerHTML = '';
+
+            if (Object.keys(dailySales).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No sales data available</td></tr>';
+            } else {
+                Object.entries(dailySales).forEach(([date, data]) => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${date}</td>
+                            <td>${data.orders}</td>
+                            <td style="color:var(--primary); font-weight:bold;">Rs. ${data.revenue.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function exportPDF() {
+            const element = document.querySelector('.main-content');
+            const opt = {
+                margin: 10,
+                filename: 'RMS_Analytics_Report.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            // Remove sidebar toggle from view temporarily
+            const sbToggle = document.getElementById('sidebarToggle');
+            if (sbToggle) sbToggle.style.display = 'none';
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                if (window.innerWidth <= 768 && sbToggle) {
+                    sbToggle.style.display = 'block';
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

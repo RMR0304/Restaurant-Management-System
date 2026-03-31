@@ -120,7 +120,7 @@ In real restaurants, the **server** may take orders even if the customer never u
 
 ---
 
-## Data model (LocalStorage “DB”)
+## Data model (LocalStorage)
 
 ### Primary keys
 

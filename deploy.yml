@@ -2,6 +2,12 @@
   become: yes
   tasks:
 
+    - name: Ensure project directory exists
+      file:
+        path: /var/www/restaurant
+        state: directory
+        mode: '0755'
+
     - name: Pull latest code
       git:
         repo: https://github.com/RMR0304/Restaurant-Management-System.git
@@ -9,11 +15,12 @@
         version: master
         force: yes
 
-    - name: Copy files to nginx root
-      copy:
+    - name: Sync files to nginx root
+      synchronize:
         src: /var/www/restaurant/
         dest: /var/www/html/
-        remote_src: yes
+        recursive: yes
+        delete: yes
 
     - name: Restart nginx
       service:

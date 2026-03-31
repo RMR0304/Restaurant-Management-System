@@ -1,0 +1,21 @@
+- hosts: web
+  become: yes
+  tasks:
+
+    - name: Pull latest code
+      git:
+        repo: https://github.com/RMR0304/Restaurant-Management-System.git
+        dest: /var/www/restaurant
+        version: master
+        force: yes
+
+    - name: Copy files to nginx root
+      copy:
+        src: /var/www/restaurant/
+        dest: /var/www/html/
+        remote_src: yes
+
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: restarted

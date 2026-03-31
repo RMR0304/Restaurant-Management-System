@@ -8,7 +8,7 @@ It supports multiple roles (Admin, Server, Kitchen, Customer) and a **phone-numb
 
 ## Tech stack
 
-- **Frontend**: HTML + CSS + vanilla JavaScript
+- **Frontend**: HTML + CSS + JavaScript
 - **Persistence**: Browser `localStorage` / `sessionStorage`
 - **No backend required**
 

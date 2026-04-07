@@ -9,18 +9,7 @@ class KitchenServices {
         if (index > -1) {
             orders[index].status = newStatus;
 
-            // If completed/ready, reduce inventory
-            if (newStatus === 'Preparing') {
-                const menu = Storage.get('menu');
-                orders[index].items.forEach(item => {
-                    const mIndex = menu.findIndex(m => m.id === item.menuItem.id);
-                    if (mIndex > -1) {
-                        menu[mIndex].stock -= item.quantity;
-                        if (menu[mIndex].stock < 0) menu[mIndex].stock = 0;
-                    }
-                });
-                Storage.set('menu', menu);
-            }
+            // Inventory is now reduced at the time of order placement in order.html
 
             Storage.set('orders', orders);
             UI.showToast(`Order marked as ${newStatus}`, 'success');

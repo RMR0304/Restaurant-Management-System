@@ -128,12 +128,63 @@ class AdminServices {
                         <input type="text" id="itemCategory" class="glass-input" placeholder="Category" required>
                         <input type="number" id="itemPrice" class="glass-input" placeholder="Price" step="0.01" required>
                         <input type="number" id="itemStock" class="glass-input" placeholder="Stock Quantity" required>
-                        <input type="text" id="itemImage" class="glass-input" placeholder="Image URL">
+                        <div style="display: flex; flex-direction: column; gap: 5px;">
+                            <label style="font-size: 0.9em; color: var(--text-muted, #ccc);">Item Image</label>
+                            <div id="dropZone" style="border: 2px dashed var(--glass-border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; background: rgba(255,255,255,0.02); min-height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--primary); margin-bottom: 10px;"></i>
+                                <span style="font-size: 0.9em; color: var(--text-secondary);">Click or Drag & Drop image here</span>
+                                <input type="file" id="itemImageFile" accept="image/*" style="opacity: 0; position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer;">
+                            </div>
+                            <input type="hidden" id="itemImage">
+                            <img id="itemImagePreview" style="max-height: 100px; display: none; object-fit: cover; border-radius: 8px; margin-top: 10px;">
+                        </div>
                         <button type="submit" class="glass-btn" style="margin-top: 10px;">Save changes</button>
                     </form>
                 </div>
             `;
             document.body.appendChild(modal);
+
+            const dropZone = document.getElementById('dropZone');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.style.background = 'rgba(255,255,255,0.1)', false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.style.background = 'rgba(255,255,255,0.02)', false);
+            });
+            
+            dropZone.addEventListener('drop', handleDrop, false);
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files[0]) {
+                    processImageFile(files[0]);
+                }
+            }
+            
+            function processImageFile(file) {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        document.getElementById('itemImage').value = evt.target.result;
+                        document.getElementById('itemImagePreview').src = evt.target.result;
+                        document.getElementById('itemImagePreview').style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            document.getElementById('itemImageFile').addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    processImageFile(e.target.files[0]);
+                }
+            });
 
             document.getElementById('itemForm').addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -172,6 +223,9 @@ class AdminServices {
         document.getElementById('itemForm').reset();
         document.getElementById('itemMode').value = 'add';
         document.getElementById('itemModalTitle').textContent = 'Add Menu Item';
+        document.getElementById('itemImage').value = '';
+        document.getElementById('itemImagePreview').src = '';
+        document.getElementById('itemImagePreview').style.display = 'none';
         UI.showModal('itemModal');
     }
 
@@ -210,5 +264,12 @@ class AdminServices {
         document.getElementById('itemPrice').value = item.price;
         document.getElementById('itemStock').value = item.stock;
         document.getElementById('itemImage').value = item.image;
+        if (item.image) {
+            document.getElementById('itemImagePreview').src = item.image;
+            document.getElementById('itemImagePreview').style.display = 'block';
+        } else {
+            document.getElementById('itemImagePreview').src = '';
+            document.getElementById('itemImagePreview').style.display = 'none';
+        }
     }
 }

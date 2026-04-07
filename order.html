@@ -326,6 +326,26 @@
             orders.push(newOrder);
             Storage.set('orders', orders);
 
+            // Deduct stock dynamically upon order placement
+            let menu = Storage.get('menu') || [];
+            let outOfStockWarnings = [];
+            cart.forEach(item => {
+                let mIndex = menu.findIndex(m => m.id === item.menuItem.id);
+                if (mIndex > -1) {
+                    menu[mIndex].stock -= item.quantity;
+                    if (menu[mIndex].stock <= 0) {
+                        menu[mIndex].stock = 0; // Prevent negative stock
+                        outOfStockWarnings.push(menu[mIndex].name);
+                    }
+                }
+            });
+            Storage.set('menu', menu);
+            
+            if (outOfStockWarnings.length > 0) {
+                // Kitchen is warned dynamically by their dashboard polling, but we can also log or notify
+                console.log(`Kitchen Warning: ${outOfStockWarnings.join(', ')} out of stock!`);
+            }
+
             let earned = 0;
             if (targetUser && targetUser.role === 'customer') {
                 // Update user points (Earn 1 point per Rs. 10 spent)

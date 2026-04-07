@@ -544,11 +544,11 @@ class Storage {
         }
         if (!Storage.get('menu')) {
             const defaultMenu = [
-                new MenuItem('m1', 'Classic Burger', 'Main', 12.99, 4.8, 50, 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400').toJSON(),
-                new MenuItem('m2', 'Margherita Pizza', 'Main', 14.99, 4.5, 30, 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400').toJSON(),
-                new MenuItem('m3', 'Caesar Salad', 'Starter', 8.99, 4.2, 20, 'https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=400').toJSON(),
-                new MenuItem('m4', 'Chocolate Lava Cake', 'Dessert', 6.99, 4.9, 15, 'https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=400').toJSON(),
-                new MenuItem('m5', 'Mojito', 'Beverage', 5.99, 4.6, 40, 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400').toJSON()
+                new MenuItem('m1', 'Classic Burger', 'Main', 100.00, 4.8, 50, 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400').toJSON(),
+                new MenuItem('m2', 'Margherita Pizza', 'Main', 120.00, 4.5, 30, 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400').toJSON(),
+                new MenuItem('m3', 'Caesar Salad', 'Starter', 80.00, 4.2, 20, 'https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=400').toJSON(),
+                new MenuItem('m4', 'Chocolate Lava Cake', 'Dessert', 60.00, 4.9, 15, 'https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=400').toJSON(),
+                new MenuItem('m5', 'Mojito', 'Beverage', 25.00, 4.6, 40, 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400').toJSON()
             ];
             Storage.set('menu', defaultMenu);
         }
